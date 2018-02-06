@@ -26,15 +26,15 @@ TODO: Add long description of the pod here.
   s.license          = { :type => 'MIT', :file => 'LICENSE' }
   s.author           = { 'zxlee618' => 'zxlee618@gmail.com' }
   s.source           = { :git => 'https://github.com/zxlee618/ZXPhotoPicker.git', :tag => s.version.to_s }
-  # s.social_media_url = 'https://twitter.com/<TWITTER_USERNAME>'
 
-  s.ios.deployment_target = '8.0'
+
+  s.ios.deployment_target = '10.0'
 
   s.source_files = 'ZXPhotoPicker/Classes/**/*'
   
-  # s.resource_bundles = {
-  #   'ZXPhotoPicker' => ['ZXPhotoPicker/Assets/*.png']
-  # }
+  s.resource_bundles = {
+    'ZXPhotoPicker' => ['ZXPhotoPicker/Assets/**/*']
+  }
 
   # s.public_header_files = 'Pod/Classes/**/*.h'
   # s.frameworks = 'UIKit', 'MapKit'
