@@ -5,15 +5,22 @@
 //  Created by Zhe Xian Lee on 25/11/17.
 //
 import UIKit
+import Photos
 
 open class PhotoPickerCell: UICollectionViewCell {
     
     static let reuseIdentifier = "PhotoPickerCell"
     
-    var label: UILabel!
-    
     var imageView: UIImageView!
-
+    
+    var loadOperation: Operation?
+    
+    var asset: PHAsset? {
+        didSet {
+            
+        }
+    }
+    
     public override init(frame: CGRect) {
         super.init(frame: frame)
         commonInit()
@@ -26,13 +33,15 @@ open class PhotoPickerCell: UICollectionViewCell {
     
     func commonInit() {
         imageView = UIImageView()
+        imageView.translatesAutoresizingMaskIntoConstraints = false
         
-        label = UILabel()
-        label.text = "omg"
-        
-        backgroundColor = .yellow
+        let imageViewWidthConstraint = NSLayoutConstraint(item: imageView, attribute: .width, relatedBy: .equal, toItem: self, attribute: .width, multiplier: 1, constant: 0)
+        let imageViewHeightContraint = NSLayoutConstraint(item: imageView, attribute: .height, relatedBy: .equal, toItem: self, attribute: .height, multiplier: 1, constant: 0)
+        let iamgeViewXContraint = NSLayoutConstraint(item: imageView, attribute: .centerX, relatedBy: .equal, toItem: self, attribute: .centerX, multiplier: 1, constant: 0)
+        let imageViewYConstraint = NSLayoutConstraint(item: imageView, attribute: .centerY, relatedBy: .equal, toItem: self, attribute: .centerY, multiplier: 1, constant: 0)
         
         contentView.addSubview(imageView)
-        contentView.addSubview(label)
+        addConstraints([imageViewWidthConstraint, imageViewHeightContraint, iamgeViewXContraint, imageViewYConstraint])
+        
     }
 }

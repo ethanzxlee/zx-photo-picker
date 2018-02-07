@@ -33,7 +33,7 @@ open class PhotoPickerViewController: UIViewController {
             titleView.isExpanded = isAlbumTableViewExpanded
         }
     }
-    
+
     open override func loadView() {
         super.loadView()
         
@@ -41,6 +41,7 @@ open class PhotoPickerViewController: UIViewController {
         assetsCollectionView.register(PhotoPickerCell.self, forCellWithReuseIdentifier: PhotoPickerCell.reuseIdentifier)
         assetsCollectionView.translatesAutoresizingMaskIntoConstraints = false
         assetsCollectionView.backgroundColor = UIColor.white
+        assetsCollectionView.alwaysBounceVertical = true
         
         navigationBar = UINavigationBar()
         navigationBar.translatesAutoresizingMaskIntoConstraints = false
@@ -106,14 +107,18 @@ open class PhotoPickerViewController: UIViewController {
         })
     }
     
+    open override func viewDidLayoutSubviews() {
+        // Make the collection view starts after the navbar
+        assetsCollectionView.contentInset = UIEdgeInsets(top: navigationBar.frame.height, left: 0, bottom: 0, right: 0)
+    }
+    
     func fetchAssets() {
         assetsFetchResult = PHAsset.fetchAssets(with: PHFetchOptions())
         
         DispatchQueue.main.async {
             self.assetsCollectionView.reloadData()
+            PHPhotoLibrary.shared().register(self)
         }
-        
-//        PHPhotoLibrary.shared().register(<#T##observer: PHPhotoLibraryChangeObserver##PHPhotoLibraryChangeObserver#>)
     }
     
     func showPermissionDeniedView() {
@@ -147,6 +152,25 @@ extension PhotoPickerViewController: UICollectionViewDataSource {
     
     public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: PhotoPickerCell.reuseIdentifier, for: indexPath)
+        
+        guard let photoCell = cell as? PhotoPickerCell else {
+            return cell
+        }
+        
+        
+        photoCell.loadOperation?.cancel()
+        
+        
+        photoCell.asset = assetsFetchResult?[assetsFetchResult!.count - indexPath.item - 1] ?? nil
+        
+        photoCell.loadOperation = BlockOperation {
+            PHImageManager.default().requestImage(for: photoCell.asset!, targetSize: photoCell.frame.size, contentMode: .aspectFill, options: nil) { (image, info) in
+                photoCell.imageView.image = image
+            }
+        }
+        photoCell.loadOperation!.start()
+        
+        
         return cell
     }
     
@@ -169,6 +193,12 @@ extension PhotoPickerViewController: UITableViewDataSource {
         return cell
     }
     
-    
 }
 
+extension PhotoPickerViewController: PHPhotoLibraryChangeObserver {
+    
+    public func photoLibraryDidChange(_ changeInstance: PHChange) {
+        
+    }
+    
+}
