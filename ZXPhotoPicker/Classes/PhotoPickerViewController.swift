@@ -108,12 +108,14 @@ open class PhotoPickerViewController: UIViewController {
     }
     
     open override func viewDidLayoutSubviews() {
-        // Make the collection view starts after the navbar
+        // Make the collection view's content starts below the navbar
         assetsCollectionView.contentInset = UIEdgeInsets(top: navigationBar.frame.height, left: 0, bottom: 0, right: 0)
     }
     
     func fetchAssets() {
-        assetsFetchResult = PHAsset.fetchAssets(with: PHFetchOptions())
+        let fetchOption = PHFetchOptions()
+        fetchOption.sortDescriptors = [NSSortDescriptor(keyPath: \PHAsset.creationDate, ascending: false)]
+        assetsFetchResult = PHAsset.fetchAssets(with: fetchOption)
         
         DispatchQueue.main.async {
             self.assetsCollectionView.reloadData()
@@ -157,18 +159,15 @@ extension PhotoPickerViewController: UICollectionViewDataSource {
             return cell
         }
         
+        photoCell.asset = assetsFetchResult![indexPath.item]
         
-        photoCell.loadOperation?.cancel()
-        
-        
-        photoCell.asset = assetsFetchResult?[assetsFetchResult!.count - indexPath.item - 1] ?? nil
-        
-        photoCell.loadOperation = BlockOperation {
+        photoCell.loadImageOperation?.cancel()
+        photoCell.loadImageOperation = BlockOperation {
             PHImageManager.default().requestImage(for: photoCell.asset!, targetSize: photoCell.frame.size, contentMode: .aspectFill, options: nil) { (image, info) in
                 photoCell.imageView.image = image
             }
         }
-        photoCell.loadOperation!.start()
+        photoCell.loadImageOperation!.start()
         
         
         return cell

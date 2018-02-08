@@ -13,7 +13,7 @@ open class PhotoPickerCell: UICollectionViewCell {
     
     var imageView: UIImageView!
     
-    var loadOperation: Operation?
+    var loadImageOperation: Operation?
     
     var asset: PHAsset? {
         didSet {
