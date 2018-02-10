@@ -15,11 +15,7 @@ open class PhotoPickerCell: UICollectionViewCell {
     
     var loadImageOperation: Operation?
     
-    var asset: PHAsset? {
-        didSet {
-            
-        }
-    }
+    var asset: PHAsset? 
     
     public override init(frame: CGRect) {
         super.init(frame: frame)
@@ -34,6 +30,8 @@ open class PhotoPickerCell: UICollectionViewCell {
     func commonInit() {
         imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.contentMode = .scaleAspectFill
+        imageView.clipsToBounds = true
         
         let imageViewWidthConstraint = NSLayoutConstraint(item: imageView, attribute: .width, relatedBy: .equal, toItem: self, attribute: .width, multiplier: 1, constant: 0)
         let imageViewHeightContraint = NSLayoutConstraint(item: imageView, attribute: .height, relatedBy: .equal, toItem: self, attribute: .height, multiplier: 1, constant: 0)

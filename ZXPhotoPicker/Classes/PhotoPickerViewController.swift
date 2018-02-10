@@ -10,19 +10,25 @@ import Photos
 
 open class PhotoPickerViewController: UIViewController {
     
+    // UI
+    
     var navigationBar: UINavigationBar!
     
     var navigationBarBlurEffectView: UIVisualEffectView!
     
     var assetsCollectionView: UICollectionView!
     
-    var titleViewTapGestureRecogniser: UITapGestureRecognizer!
+    var activityIndicatorView: UIActivityIndicatorView!
     
     var albumTableView: UITableView?
     
     var permissionDeniedView: UIView?
     
+    var titleViewTapGestureRecogniser: UITapGestureRecognizer!
+    
     var assetsFetchResult: PHFetchResult<PHAsset>?
+    
+    // Flags
     
     var isAlbumTableViewExpanded: Bool = false {
         didSet {
@@ -53,11 +59,19 @@ open class PhotoPickerViewController: UIViewController {
         navigationBarBlurEffectView = UIVisualEffectView(effect: UIBlurEffect(style: .prominent))
         navigationBarBlurEffectView.translatesAutoresizingMaskIntoConstraints = false
         
-        titleViewTapGestureRecogniser = UITapGestureRecognizer(target: self, action: #selector(handleTitleViewTap(sender:)))
+        activityIndicatorView = UIActivityIndicatorView(activityIndicatorStyle: .whiteLarge)
+        activityIndicatorView?.hidesWhenStopped = true
+        activityIndicatorView.translatesAutoresizingMaskIntoConstraints = false
+        activityIndicatorView.color = .black
+        activityIndicatorView.stopAnimating()
+        
+        titleViewTapGestureRecogniser = UITapGestureRecognizer(target: self, action: #selector(titleViewWasTapped(sender:)))
+        
         let navItem = UINavigationItem()
         navItem.titleView = PhotoPickerNavigationTitleView()
         navItem.titleView?.addGestureRecognizer(titleViewTapGestureRecogniser)
         navigationBar.pushItem(navItem, animated: true)
+        navigationBar.topItem?.leftBarButtonItem = UIBarButtonItem(barButtonSystemItem: .cancel, target: self, action: #selector(cancelButtonWasPressed(sender:)))
         
         albumTableView = UITableView()
         albumTableView?.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
@@ -66,6 +80,7 @@ open class PhotoPickerViewController: UIViewController {
         self.view.addSubview(assetsCollectionView)
         self.view.addSubview(navigationBarBlurEffectView)
         self.view.addSubview(navigationBar)
+        self.view.addSubview(activityIndicatorView)
         
         if #available(iOS 11.0, *) {
             self.view.addConstraints([
@@ -84,7 +99,13 @@ open class PhotoPickerViewController: UIViewController {
                 NSLayoutConstraint(item: navigationBarBlurEffectView, attribute: .top, relatedBy: .equal, toItem: self.view, attribute: .top, multiplier: 1, constant: 0),
                 NSLayoutConstraint(item: navigationBarBlurEffectView, attribute: .bottom, relatedBy: .equal, toItem: navigationBar, attribute: .bottom, multiplier: 1, constant: 0),
                 NSLayoutConstraint(item: navigationBarBlurEffectView, attribute: .width, relatedBy: .equal, toItem: self.view, attribute: .width, multiplier: 1, constant: 0),
-                NSLayoutConstraint(item: navigationBarBlurEffectView, attribute: .centerX, relatedBy: .equal, toItem: self.view, attribute: .centerX, multiplier: 1, constant: 0)
+                NSLayoutConstraint(item: navigationBarBlurEffectView, attribute: .centerX, relatedBy: .equal, toItem: self.view, attribute: .centerX, multiplier: 1, constant: 0),
+                
+                // ActivityIndicatorView
+                NSLayoutConstraint(item: activityIndicatorView, attribute: .centerX, relatedBy: .equal, toItem: self.view, attribute: .centerX, multiplier: 1, constant: 0),
+                NSLayoutConstraint(item: activityIndicatorView, attribute: .centerY, relatedBy: .equal, toItem: self.view, attribute: .centerY, multiplier: 1, constant: 0),
+                NSLayoutConstraint(item: activityIndicatorView, attribute: .height, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 40),
+                NSLayoutConstraint(item: activityIndicatorView, attribute: .width, relatedBy: .equal, toItem: nil, attribute: .notAnAttribute, multiplier: 1, constant: 40)
             ])
         } else {
             // TODO: Fallback on earlier versions
@@ -97,8 +118,19 @@ open class PhotoPickerViewController: UIViewController {
         assetsCollectionView.dataSource = self
         assetsCollectionView.delegate = self
         
+        let flowLayout = UICollectionViewFlowLayout()
+        flowLayout.minimumLineSpacing = 1
+        flowLayout.minimumInteritemSpacing = 1
+        
+        let targetWidth = (UIScreen.main.bounds.width - 2) / 3 
+        flowLayout.itemSize = CGSize(width: targetWidth, height: targetWidth)
+        assetsCollectionView.collectionViewLayout = flowLayout
+        
         PHPhotoLibrary.requestAuthorization({ (status) in
             if status == .authorized {
+                DispatchQueue.main.async {
+                    self.activityIndicatorView.startAnimating()
+                }
                 self.fetchAssets()
             }
             else {
@@ -119,6 +151,7 @@ open class PhotoPickerViewController: UIViewController {
         
         DispatchQueue.main.async {
             self.assetsCollectionView.reloadData()
+            self.activityIndicatorView.stopAnimating()
             PHPhotoLibrary.shared().register(self)
         }
     }
@@ -136,8 +169,12 @@ open class PhotoPickerViewController: UIViewController {
         }
     }
 
-    @objc func handleTitleViewTap(sender: UITapGestureRecognizer) {
+    @objc func titleViewWasTapped(sender: UITapGestureRecognizer) {
         isAlbumTableViewExpanded = !isAlbumTableViewExpanded
+    }
+    
+    @objc func cancelButtonWasPressed(sender: UIBarButtonItem) {
+        dismiss(animated: true, completion: nil)
     }
 }
 
@@ -159,9 +196,13 @@ extension PhotoPickerViewController: UICollectionViewDataSource {
             return cell
         }
         
-        photoCell.asset = assetsFetchResult![indexPath.item]
-        
         photoCell.loadImageOperation?.cancel()
+        
+        photoCell.imageView.image = nil
+        photoCell.loadImageOperation = nil
+        photoCell.asset = nil
+        
+        photoCell.asset = assetsFetchResult![indexPath.item]
         photoCell.loadImageOperation = BlockOperation {
             PHImageManager.default().requestImage(for: photoCell.asset!, targetSize: photoCell.frame.size, contentMode: .aspectFill, options: nil) { (image, info) in
                 photoCell.imageView.image = image
@@ -169,10 +210,9 @@ extension PhotoPickerViewController: UICollectionViewDataSource {
         }
         photoCell.loadImageOperation!.start()
         
-        
         return cell
     }
-    
+
 }
 
 
